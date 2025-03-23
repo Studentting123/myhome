@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记忆回廊</title>
+    <!-- 引入Bootstrap样式 -->
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 引入自定义CSS样式 -->
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        .art-frame {
+            border: 5px solid #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .art-frame:hover {
+            transform: scale(1.05);
+        }
+
+        /* 提示框样式 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .overlay-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .overlay-button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .music-controls select, .music-controls button, .music-controls input[type="range"] {
+            margin-right: 5px;
+        }
+
+        .info-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 100%; /* 设置为100%以便在Flex容器中平分空间 */
+            max-height: calc(100vh - 100px); /* 最大高度为视口高度减去一些间距 */
+            overflow-y: auto; /* 添加滚动条以处理过高的内容 */
+        }
+
+        .modal-dialog-centered {
+            min-width: 90%; /* 增加模态框宽度以适应大屏幕 */
+            max-width: 90%; /* 最大宽度为90% */
+            margin: 1rem auto; /* 自动左右外边距 */
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch; /* 使子元素拉伸以填充可用空间 */
+        }
+
+        .modal-image-container img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .story-description {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            width: 100%;
+            white-space: pre-wrap; /* 保留换行符 */
+        }
+
+        .info-title {
+            font-size: 1.5em; /* 设置标题字体大小 */
+            margin-bottom: 10px; /* 标题与正文之间的间距 */
+        }
+
+        .modal-info-container {
+            align-items: flex-start; /* 信息框左对齐 */
+            margin-left: 20px; /* 左侧间距 */
+            margin-top: 20px; /* 上方间距 */
+            margin-right: 20px; /* 右侧间距 */
+            margin-bottom: 20px; /* 底部间距 */
+        }
+
+        .dynamic-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/梦幻1.png'); /* 替换为你想要的背景图片URL */
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: 0 0;
+            transition: background-image 15s linear; /* 延长过渡时间为15秒 */
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="dynamic-background"></div>
+
+    <!-- 音乐 Controls -->
+    <div class="music-controls position-fixed top-0 end-0 mt-2 me-2 d-none d-sm-block">
+        <select id="music-select">
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/我们的家 -女声版.mp3">我们的家 -女声版</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/我们的家-男声版.mp3">我们的家-男声版</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/Fresh Focus.mp3">Fresh Focus</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/From Page to Practice.mp3">From Page to Practice</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/Inventing Flight.mp3">Inventing Flight</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/Limit 70.mp3">Limit 70</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/Natural Vibes.mp3">Natural Vibes</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/Pickled Pink.mp3">Pickled Pink</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/Study and Relax.mp3">Study and Relax</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/The Celebrated Minuet.mp3">The Celebrated Minuet</option>
+            <option value="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/Ukulele Song.mp3">Ukulele Song</option>
+        </select>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
+        <button id="mute-button">静音</button>
+        <audio id="background-music" controls loop style="display:none;">
+            <source id="audio-source" src="https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/我们的家 -女声版.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <div class="container py-5">
+        <h1 class="mb-4 text-center gradient-text">回廊故事</h1>
+        
+        <div class="row gallery" id="gallery-container">
+            <!-- 图片将通过JavaScript动态插入此处 -->
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-image-container">
+                        <img id="modalImage" src="" alt="Selected Image" class="img-fluid rounded art-frame">
+                    </div>
+                    <div class="modal-info-container">
+                        <div class="info-box">
+                            <h2 class="info-title" id="infoTitleInsideModal"></h2>
+                            <div class="story-description">
+                                <p id="storyText">故事文本</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div class="overlay" id="overlay">
+        <div class="overlay-content">
+            <p>欢迎来到记忆的回廊！点击下方按钮开始体验。</p>
+            <button class="overlay-button" onclick="startExperience()">开始</button>
+        </div>
+    </div>
+
+    <!-- 引入jQuery和Bootstrap JS -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 默认音乐配置
+        const defaultMusicPath = "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/music/我们的家 -女声版.mp3";
+
+        const images = [
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/0.png", 
+                info: "《绽放的秘密》", 
+                story: `在一个遥远的山谷里，有一种神奇的花朵——晨曦花。这种花只在清晨的第一缕阳光照耀下才会绽放，散发出淡淡的香气，吸引着山谷中的生灵前来观赏。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/1.png", 
+                info: "《友谊与冒险》", 
+                story: `在一个充满魔法的森林里，住着一只名叫卡皮巴拉的小水豚鼠。它有着大大的耳朵和圆圆的眼睛，头上总是戴着一朵漂亮的小花。卡皮巴拉非常喜欢探险，每天都会在森林里寻找新的冒险。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/2.png", 
+                info: "《时光穿梭的守护者》", 
+                story: `在一个遥远的未来世界，科技高度发达，人类已经掌握了时间旅行的技术。主人公艾莉娅是一位时空守护者，她的任务是维护时间线的稳定，防止任何意外改变历史进程。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/21.png", 
+                info: "《梦幻之舞》", 
+                story: `在一个充满魔法与奇迹的世界里，有一位名叫莉莉的小女孩。她拥有一头闪耀着星光的长发，每当夜幕降临，她的头发就会散发出柔和的光芒，照亮整个村庄。莉莉的梦想是成为一名芭蕾舞者，她每天都会在村里的老橡树下练习舞蹈。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/14.png", 
+                info: "《冰雪之歌》", 
+                story: `在一个遥远的冰雪王国里，住着一位名叫甘雨的少女。她是冰雪王国的守护者，拥有操控冰雪的神奇力量。一天，冰雪王国遭遇了一场前所未有的危机，邪恶的力量试图破坏这个宁静的国度。甘雨决定踏上旅程，寻找能够拯救王国的方法。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/17.png", 
+                info: "《花语的秘密》", 
+                story: `在一个宁静的小镇上，住着一位名叫小樱的女孩。小樱拥有一双能看透人心的眼睛，每当她看到花朵时，总能感受到花朵传达的情感。这一天，她在森林里散步，无意中发现了一片盛开的野花。这些花朵散发着淡淡的香气，仿佛在诉说着什么。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/18.png", 
+                info: "《灵魂之花》", 
+                story: `在一个充满魔法与奇迹的世界里，有一个名叫胡桃的小女孩。她拥有一颗纯真的心灵和对未知世界的好奇心。一天晚上，她在梦中见到了一位神秘的堂主，这位堂主告诉她，只要找到一朵特殊的花朵——灵魂之花，并将其献给月亮女神，就能实现一个愿望。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/15.png", 
+                info: "《守护者的孤独与责任》", 
+                story: `在一个宁静的夜晚，魈独自坐在山巅，守护着璃月的土地。他虽然外表冷峻，内心却充满了对这片土地的深深眷恋。每当夜幕降临，魈便会出现在这里，用他的力量保护着这片土地免受邪灵的侵扰。尽管他常常独自一人，但他知道，他的存在对于璃月来说是不可或缺的。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/19.png", 
+                info: "《嫦娥奔月》", 
+                story: `从前，有一个名叫后羿的英雄，他射下了九个太阳，拯救了人间。后羿因此得到了一粒不死药，但他的妻子嫦娥却误食了这粒药。嫦娥吃了不死药后，身体变得轻盈无比，最终飞向了月亮。从此，嫦娥便住在了广寒宫，成为了月宫中的仙女。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/23.png", 
+                info: "《智慧与勇气》", 
+                story: `在一个宁静的小镇上，住着一只名叫小墨的青蛙。小墨非常喜欢读书，它的房间里堆满了各种各样的书籍。每天晚上，小墨都会坐在窗边，借着月光阅读那些充满智慧的故事和知识。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/11.png", 
+                info: "《绯月之瞳》", 
+                story: `在遥远的迷雾森林深处，住着一位名叫艾莉娅的精灵少女。她拥有一头如落日般绚丽的粉色长发和一双闪烁着智慧光芒的金色眼睛。艾莉娅是这片森林的守护者，负责保护森林中的生灵免受外界的侵扰。...`
+            },
+            { 
+                url: "https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/22.png", 
+                info: "《小兔子的作业难题》", 
+                story: `在一个宁静的森林里，住着一只聪明又勤奋的小兔子。每天，小兔子都会去森林学校学习新知识。有一天，老师给小兔子布置了一份特别的作业——制作一份关于森林生态的报告。...`
+            }
+        ];
+
+        function showImage(imageUrl) {
+            document.getElementById('modalImage').src = imageUrl;
+        }
+
+        // 动态生成图片展示部分
+        function generateGallery() {
+            const galleryContainer = document.getElementById('gallery-container');
+            images.forEach((imgData, index) => {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'col-md-6 mb-4';
+                
+                const galleryItemDiv = document.createElement('div');
+                galleryItemDiv.className = 'gallery-item';
+                galleryItemDiv.setAttribute('data-bs-toggle', 'modal');
+                galleryItemDiv.setAttribute('data-bs-target', '#imageModal');
+                galleryItemDiv.onclick = () => {
+                    showImage(imgData.url);
+                    showInfoBox(imgData.info);
+                    showStoryBox(imgData.story);
+                };
+                
+                const imgElement = document.createElement('img');
+                imgElement.src = imgData.url;
+                imgElement.alt = `作品${index + 1}`;
+                imgElement.className = 'img-fluid rounded art-frame'; // 添加艺术图框样式
+                
+                const pElement = document.createElement('p');
+                pElement.className = 'mt-2';
+                pElement.textContent = `回廊${index + 1}`;
+
+                galleryItemDiv.appendChild(imgElement);
+                galleryItemDiv.appendChild(pElement);
+                colDiv.appendChild(galleryItemDiv);
+                galleryContainer.appendChild(colDiv);
+            });
+        }
+
+        // 显示信息框
+        function showInfoBox(infoText) {
+            const infoTitle = document.getElementById('infoTitleInsideModal');
+            infoTitle.textContent = infoText;
+        }
+
+        // 显示故事框
+        function showStoryBox(storyText) {
+            const storyTextBox = document.getElementById('storyText');
+            storyTextBox.textContent = storyText;
+        }
+
+        function startExperience() {
+            document.getElementById('overlay').style.display = 'none';
+            playDefaultMusic();
+            generateGallery();
+            toggleBackgroundImages();
+        }
+
+        function playDefaultMusic() {
+            const audioElement = document.getElementById('background-music');
+            const audioSource = document.getElementById('audio-source');
+
+            audioSource.src = defaultMusicPath;
+            audioElement.load();
+            audioElement.volume = 0.5; // 设置初始音量为0.5
+            audioElement.play().catch(error => {
+                console.error("播放失败:", error);
+            });
+        }
+
+        // 背景图片切换逻辑
+        let backgroundImageIndex = 0;
+        const backgroundImages = [
+            'https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/梦幻1.png',
+            'https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/梦幻1-1.png',
+            'https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/梦幻2.png',
+            'https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/梦幻2-2.png',
+            'https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/梦幻3.png',
+            'https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/梦幻3-3.png',
+            'https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/梦幻4.png',
+            'https://everystory.oss-cn-hangzhou.aliyuncs.com/myproject/static/images/梦幻4-4.png'
+        ];
+
+        function toggleBackgroundImages() {
+            setInterval(() => {
+                backgroundImageIndex = (backgroundImageIndex + 1) % backgroundImages.length;
+                document.querySelector('.dynamic-background').style.backgroundImage = `url('${backgroundImages[backgroundImageIndex]}')`;
+            }, 30000); // 切换间隔时间为30秒
+        }
+
+        // 音乐控制逻辑
+        const musicSelect = document.getElementById('music-select');
+        const muteButton = document.getElementById('mute-button');
+        const volumeSlider = document.getElementById('volume-slider');
+        const audioElement = document.getElementById('background-music');
+        const audioSource = document.getElementById('audio-source');
+
+        musicSelect.addEventListener('change', function() {
+            const selectedMusic = this.value;
+            if (selectedMusic) {
+                audioSource.src = selectedMusic;
+                audioElement.load();
+                audioElement.play().catch(error => {
+                    console.error("播放失败:", error);
+                });
+            } else {
+                audioSource.src = '';
+                audioElement.pause();
+            }
+        });
+
+        muteButton.addEventListener('click', function() {
+            audioElement.muted = !audioElement.muted;
+            if (audioElement.muted) {
+                muteButton.textContent = '取消静音';
+            } else {
+                muteButton.textContent = '静音';
+            }
+        });
+
+        volumeSlider.addEventListener('input', function() {
+            audioElement.volume = volumeSlider.value;
+        });
+
+        // 页面加载时显示提示框
+        window.onload = function() {
+            document.getElementById('overlay').style.display = 'flex';
+        };
+    </script>
+</body>
+</html>
+
+
